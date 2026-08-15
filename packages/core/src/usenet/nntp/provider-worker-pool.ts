@@ -98,6 +98,11 @@ export class ProviderWorkerPool {
 
   private lastDialOkAt = 0;
   private lastDialError?: { at: number; kind: string; message: string };
+  private dialErrorCount = 0;
+  private readerProbeAttempts = 0;
+  private readerProbeSuccesses = 0;
+  private readerProbeFailures = 0;
+  private lastReaderProbeSuccessAt = 0;
 
   /** A successful authenticated dial has happened at least once. */
   private everOnline = false;
@@ -404,6 +409,7 @@ export class ProviderWorkerPool {
   }
 
   private onDialError(slot: Slot, err: unknown): void {
+    this.dialErrorCount++;
     this.lastDialError = {
       at: Date.now(),
       kind: err instanceof NntpError ? err.kind : 'unknown',
@@ -593,9 +599,15 @@ export class ProviderWorkerPool {
       if (!conn || slot.probing || !conn.isUsable || conn.inFlight > 0)
         continue;
       slot.probing = true;
+      this.readerProbeAttempts++;
       conn
         .probeReader(undefined, this.opts.idleConnectionMs)
+        .then(() => {
+          this.readerProbeSuccesses++;
+          this.lastReaderProbeSuccessAt = Date.now();
+        })
         .catch(() => {
+          this.readerProbeFailures++;
           if (slot.conn === conn) {
             // A failed probe leaves transport/protocol state uncertain. Close it
             // explicitly before releasing the slot so the socket cannot leak.
@@ -648,6 +660,13 @@ export class ProviderWorkerPool {
       queued: this.prioQ.length + this.normalQ.length,
       lastDialOkAt: this.lastDialOkAt || undefined,
       lastDialError: this.lastDialError,
+      readerHealth: {
+        attempts: this.readerProbeAttempts,
+        successes: this.readerProbeSuccesses,
+        failures: this.readerProbeFailures,
+        lastSuccessAt: this.lastReaderProbeSuccessAt || undefined,
+        dialErrors: this.dialErrorCount,
+      },
     };
   }
 

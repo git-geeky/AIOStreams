@@ -139,6 +139,10 @@ export function isConnectionLimitResponse(code: number, text: string): boolean {
   ) {
     return true;
   }
+  // Premiumize uses this exact 502 for account/fair-use denial. It is not a
+  // connection ceiling, so the caller must fail the provider and continue to
+  // configured backups instead of indefinitely throttling and redialing it.
+  if (/access\s+denied\s+to\s+your\s+node/i.test(text)) return false;
   if (isCredentialRejectionText(text)) return false;
   return code === 482 || code === 502;
 }

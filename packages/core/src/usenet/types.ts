@@ -191,6 +191,14 @@ export interface ProviderPoolInfo {
   queued: number;
   lastDialOkAt?: number;
   lastDialError?: { at: number; kind: string; message: string };
+  /** Sanitized monotonic reader-health observations for rollout canaries. */
+  readerHealth: {
+    attempts: number;
+    successes: number;
+    failures: number;
+    lastSuccessAt?: number;
+    dialErrors: number;
+  };
 }
 
 export interface PoolInfo {

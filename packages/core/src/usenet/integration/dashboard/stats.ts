@@ -244,6 +244,13 @@ function idlePool(
       freeSlots: 0,
       throughput: 0,
       queued: 0,
+      readerHealth: {
+        attempts: 0,
+        successes: 0,
+        failures: 0,
+        lastSuccessAt: undefined,
+        dialErrors: 0,
+      },
     })),
     globalDownloadsInUse: 0,
     globalDownloadMax: options.maxConcurrentDownloads ?? 0,
